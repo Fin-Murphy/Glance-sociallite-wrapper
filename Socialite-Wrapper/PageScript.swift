@@ -26,7 +26,10 @@ enum PageScript {
           var PROFILE_TABS = \#(list(NavigationPolicy.blockedProfileTabs));
 
           // Matched case-insensitively against whole short text nodes. Add your Instagram UI language's wording.
-          var AD_LABELS = ['sponsored'];
+          var AD_LABELS = ['sponsored', 'ad'];   // the mobile build labels ads "Ad"
+          // Text of the Follow button Instagram puts in the header of a post from an account you don't follow.
+          // Not "following" (you do follow them).
+          var FOLLOW_LABELS = ['follow', 'follow back'];
           var SUGGESTED_LABELS = ['suggested for you', 'suggested posts'];
           var CAUGHT_UP_LABELS = ["you're all caught up", "you've completely caught up"];
 
@@ -113,21 +116,38 @@ enum PageScript {
             }
             return found;
           }
+          // Ad plumbing in a post's links: catches ads whose label we don't match.
+          function adLinked(article) {
+            return article.querySelector('a[href*="/ads/ig_redirect"], a[href*="a_mpk="]') !== null;
+          }
+          // A post from an account you don't follow carries a Follow button; followed accounts' posts and ads don't.
+          // Only button text counts, so a caption or comment reading "Follow" doesn't.
+          function notFollowed(article) {
+            return labelled(article, FOLLOW_LABELS).some(function (el) {
+              var button = el.closest('button, [role="button"]');
+              return button !== null && article.contains(button);
+            });
+          }
           function setHidden(el, hide) {
             if (hide !== el.hasAttribute('data-glance-hidden')) { el.toggleAttribute('data-glance-hidden', hide); }
           }
-          // Largest ancestor of el holding no <article>: the feed slot of a non-post block
-          // (e.g. the "Suggested for you" people carousel). null if that would reach <body>.
+          // Largest ancestor of el holding no <article> besides el itself: el's feed slot (a post's wrapper, or
+          // a non-post block such as the "Suggested for you" people carousel). null if that would reach <body>.
           function slotFor(el) {
+            var own = el.matches('article') ? 1 : 0;
             var node = el;
             while (node.parentElement && node.parentElement !== document.body &&
-                   !node.parentElement.querySelector('article')) {
+                   node.parentElement.querySelectorAll('article').length === own) {
               node = node.parentElement;
             }
             return (node.parentElement && node.parentElement !== document.body) ? node : null;
           }
 
           var hiddenSlots = [];   // suggested-block slots we hid; re-checked every sweep
+          var hiddenAfterStop = [];   // feed-list siblings after the stop point (see sweep)
+          // A trailing run this long of posts we hid counts as "caught up" when Instagram shows no marker:
+          // stops Instagram fetching endless hidden suggestions, which could look automated.
+          var MAX_TRAILING_HIDDEN = 10;
           function sweep() {
             ensureStyle();
             // Profile Reels tab (/<user>/reels/): CSS can't match every username.
@@ -147,12 +167,32 @@ enum PageScript {
               // Re-evaluated every sweep, so a recycled <article> node is un-hidden when its content changes.
               setHidden(article, afterCaughtUp ||
                 labelled(article, AD_LABELS).length > 0 ||
-                labelled(article, SUGGESTED_LABELS).length > 0);
+                labelled(article, SUGGESTED_LABELS).length > 0 ||
+                adLinked(article) || notFollowed(article));
             }
+            // Account safety: past "caught up" the feed is all suggestions, which we hide (zero height), so
+            // Instagram's infinite-scroll sentinel would stay on screen and keep loading pages with no user
+            // scrolling. Hide every feed-list sibling after the stop point (sentinel and spinner too). The stop
+            // point is the marker's slot, or else the first post of a trailing run of hidden posts.
+            var trailing = 0;
+            while (trailing < articles.length &&
+                   articles[articles.length - 1 - trailing].hasAttribute('data-glance-hidden')) { trailing++; }
+            var stop = caughtUp ||
+              (trailing >= MAX_TRAILING_HIDDEN ? articles[articles.length - trailing] : null);
+            var stopSlot = stop && slotFor(stop);
+            var afterStop = [];
+            for (var sib = stopSlot && stopSlot.nextElementSibling; sib; sib = sib.nextElementSibling) {
+              afterStop.push(sib);
+            }
+            hiddenAfterStop.forEach(function (el) {
+              if (afterStop.indexOf(el) === -1) { setHidden(el, false); }
+            });
+            afterStop.forEach(function (el) { setHidden(el, true); });
+            hiddenAfterStop = afterStop;
             hiddenSlots = hiddenSlots.filter(function (slot) {
               var stillSuggested = slot.isConnected && !slot.querySelector('article') &&
                 labelled(slot, SUGGESTED_LABELS).length > 0;
-              if (!stillSuggested) { setHidden(slot, false); }
+              setHidden(slot, stillSuggested);
               return stillSuggested;
             });
             var blocks = labelled(document.body, SUGGESTED_LABELS);

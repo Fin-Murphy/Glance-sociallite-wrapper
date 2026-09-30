@@ -33,9 +33,9 @@ struct NavigationPolicyTests {
     }
 
     @Test(arguments: [
-        ("https://www.instagram.com/reels/", NavigationPolicy.BlockedSection.reels, "https://www.instagram.com/?variant=following"),
-        ("https://www.instagram.com/reels/xyz/", .reels, "https://www.instagram.com/?variant=following"),
-        ("https://www.instagram.com/REELS", .reels, "https://www.instagram.com/?variant=following"),
+        ("https://www.instagram.com/reels/", NavigationPolicy.BlockedSection.reels, "https://www.instagram.com/"),
+        ("https://www.instagram.com/reels/xyz/", .reels, "https://www.instagram.com/"),
+        ("https://www.instagram.com/REELS", .reels, "https://www.instagram.com/"),
         ("https://www.instagram.com/explore/", .explore, "https://www.instagram.com/explore/search/"),
         ("https://www.instagram.com/explore", .explore, "https://www.instagram.com/explore/search/"),
         ("https://www.instagram.com/explore/tags/cats/", .explore, "https://www.instagram.com/explore/search/"),
