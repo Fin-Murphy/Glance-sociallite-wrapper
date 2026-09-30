@@ -24,6 +24,8 @@ enum PageScript {
           var BLOCKED_PREFIXES = \#(list(NavigationPolicy.blockedPrefixes.map(\.prefix)));
           var ALLOWED_EXACT = \#(list(NavigationPolicy.allowedExactPaths));
           var PROFILE_TABS = \#(list(NavigationPolicy.blockedProfileTabs));
+          var FEED_HOSTS = \#(list(NavigationPolicy.feedHosts));
+          var FEED_VARIANTS = \#(list(NavigationPolicy.allowedFeedVariants));
 
           // Matched case-insensitively against whole short text nodes. Add your Instagram UI language's wording.
           var AD_LABELS = ['sponsored', 'ad'];   // the mobile build labels ads "Ad"
@@ -60,6 +62,9 @@ enum PageScript {
             var host = url.hostname.toLowerCase();
             if (host !== 'instagram.com' && !/\.instagram\.com$/.test(host)) { return false; }
             var path = normPath(url.pathname);
+            if (path === '/' && FEED_HOSTS.indexOf(host) !== -1) {   // For you feed, unless an allowed variant
+              return FEED_VARIANTS.indexOf(url.searchParams.get('variant') || '') === -1;
+            }
             if (ALLOWED_EXACT.indexOf(path) !== -1) { return false; }
             for (var i = 0; i < BLOCKED_PREFIXES.length; i++) {
               if (path.indexOf(BLOCKED_PREFIXES[i]) === 0) { return true; }

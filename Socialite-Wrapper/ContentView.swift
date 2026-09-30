@@ -36,10 +36,10 @@ struct ContentView: View {
             }
         }
         .overlay(alignment: .top) {
-            if let section = model.blockedSection {
+            if let section = model.blockedSection, let message = toastMessage(for: section) {
                 HStack(spacing: 8) {
                     Image(systemName: "leaf").foregroundStyle(.tint)
-                    Text(toastMessage(for: section))
+                    Text(message)
                         .font(.footnote.weight(.medium))
                 }
                 .padding(.horizontal, 14)
@@ -61,11 +61,12 @@ struct ContentView: View {
         }
     }
 
-    private func toastMessage(for section: NavigationPolicy.BlockedSection) -> LocalizedStringKey {
+    private func toastMessage(for section: NavigationPolicy.BlockedSection) -> LocalizedStringKey? {
         switch section {
         case .reels: "Reels are switched off. Back to your feed."
         case .profileReels: "Reels are switched off."
         case .explore: "Explore is switched off. Search is still here."
+        case .forYou: nil   // every Home tap lands here; no toast
         }
     }
 }

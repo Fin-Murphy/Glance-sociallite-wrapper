@@ -10,9 +10,8 @@ import WebKit
 /// All allow/block rules live here. Edit these to tweak what the app lets through.
 /// PageScript's JS guard is generated from the same constants.
 enum NavigationPolicy {
-    /// Start page, and where blocked Reels go. Plain "/" has the stories tray; PageScript hides non-followed posts.
-    static let home = URL(string: "https://www.instagram.com/")!
-    // Following feed (no stories tray): static let home = URL(string: "https://www.instagram.com/?variant=following")!
+    /// Start page, and where blocked Reels and the For you feed go: the Following feed (no stories tray).
+    static let home = URL(string: "https://www.instagram.com/?variant=following")!
     static let search = URL(string: "https://www.instagram.com/explore/search/")!
 
     /// "Open the app" buttons: never followed.
@@ -30,7 +29,11 @@ enum NavigationPolicy {
     /// Profile tabs (/<user>/<tab>/) that are blocked and sent back to the profile.
     static let blockedProfileTabs = ["reels"]
 
-    enum BlockedSection { case reels, profileReels, explore }
+    /// The For you feed: "/" on these hosts is sent to `home` unless its `variant` query item is allowed.
+    static let feedHosts = ["instagram.com", "www.instagram.com"]
+    static let allowedFeedVariants = ["following", "favorites"]
+
+    enum BlockedSection { case reels, profileReels, explore, forYou }
 
     enum Decision: Equatable {
         case allow
@@ -58,6 +61,11 @@ enum NavigationPolicy {
 
         var path = url.path().lowercased()
         if !path.hasSuffix("/") { path += "/" }
+        if path == "/", feedHosts.contains(host) {
+            let variant = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                .queryItems?.first { $0.name == "variant" }?.value
+            return allowedFeedVariants.contains(variant ?? "") ? .allow : .redirect(home, .forYou)
+        }
         if allowedExactPaths.contains(path) { return .allow }
         if let rule = blockedPrefixes.first(where: { path.hasPrefix($0.prefix) }) {
             return .redirect(rule.redirect, rule.section)
