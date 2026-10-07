@@ -1,6 +1,7 @@
 # Plan: stories tray back on Home, non-followed posts still hidden
 
-Owner: pm. Written 2026-10-06. Status: waiting on task 1.
+Owner: pm. Written 2026-10-06. Status (2026-10-06): task 1 done (`docs/diagnose-feed.js`, mocks only);
+task 4 done on branch `home-root` (a9a0438, verify.sh green), not merged until task 5 lands. Waiting on task 2 (user); 3 and 5 blocked on it.
 
 ## Goal
 
