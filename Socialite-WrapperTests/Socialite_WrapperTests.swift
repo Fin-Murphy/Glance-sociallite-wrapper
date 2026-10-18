@@ -70,6 +70,26 @@ struct NavigationPolicyTests {
     }
 }
 
+@MainActor
+struct CrashReloadLimitTests {
+
+    let start = Date(timeIntervalSinceReferenceDate: 0)
+
+    @Test func firstCrashReloads() {
+        #expect(WebViewModel.shouldReloadAfterCrash(lastReload: nil, now: start))
+    }
+
+    @Test(arguments: [0.0, 1, 29.9])
+    func crashInsideWindowDoesNotReload(_ seconds: Double) {
+        #expect(!WebViewModel.shouldReloadAfterCrash(lastReload: start, now: start.addingTimeInterval(seconds)))
+    }
+
+    @Test(arguments: [30.0, 31, 600])
+    func crashAfterWindowReloads(_ seconds: Double) {
+        #expect(WebViewModel.shouldReloadAfterCrash(lastReload: start, now: start.addingTimeInterval(seconds)))
+    }
+}
+
 struct AppBundleTests {
 
     /// Unit tests run inside the host app (TEST_HOST), so Bundle.main is the app bundle.

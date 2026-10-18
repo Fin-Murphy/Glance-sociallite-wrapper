@@ -88,6 +88,7 @@ final class WebViewModel: NSObject, WKNavigationDelegate, WKUIDelegate, WKScript
     let webView: WKWebView
     @ObservationIgnored private var urlObservation: NSKeyValueObservation?
     @ObservationIgnored private var recentBounces: [Date] = []
+    @ObservationIgnored private var lastCrashReload: Date?
 
     override init() {
         let config = WKWebViewConfiguration()
@@ -217,8 +218,22 @@ final class WebViewModel: NSObject, WKNavigationDelegate, WKUIDelegate, WKScript
         loadFailed = true
     }
 
+    /// The page's content is gone; show the spinner, or the error view if WebContent keeps dying.
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        webView.load(URLRequest(url: NavigationPolicy.home)) // otherwise a blank white screen
+        hasLoaded = false
+        let now = Date()
+        guard Self.shouldReloadAfterCrash(lastReload: lastCrashReload, now: now) else {
+            loadFailed = true
+            return
+        }
+        lastCrashReload = now
+        webView.load(URLRequest(url: NavigationPolicy.home))
+    }
+
+    /// At most 1 automatic reload per 30 s after a WebContent crash, so a crashing process can't reload forever.
+    static func shouldReloadAfterCrash(lastReload: Date?, now: Date) -> Bool {
+        guard let lastReload else { return true }
+        return now.timeIntervalSince(lastReload) >= 30
     }
 
     // MARK: WKUIDelegate

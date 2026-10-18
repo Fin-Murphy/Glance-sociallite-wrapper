@@ -398,7 +398,7 @@
 				DEVELOPMENT_TEAM = 72D3CDCYDY;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Glance;
+				INFOPLIST_KEY_CFBundleDisplayName = Shitstagram;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Used when you choose Take Photo or Video to send in a message.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Used when you record a video with sound to send in a message.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Used when you pick photos or videos to send in a message.";
@@ -435,7 +435,7 @@
 				DEVELOPMENT_TEAM = 72D3CDCYDY;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Glance;
+				INFOPLIST_KEY_CFBundleDisplayName = Shitstagram;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Used when you choose Take Photo or Video to send in a message.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Used when you record a video with sound to send in a message.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Used when you pick photos or videos to send in a message.";
