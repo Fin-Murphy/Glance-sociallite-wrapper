@@ -261,6 +261,13 @@ Everything in this section is best guess (see §0). Paths are compared **lowerca
      keep blocking it for pushState/replaceState.
    - (b) Does `/reel/A/` → `/reel/B/` happen through replaceState with no tap, meaning chained autoplay? If
      so, block `/reel/` → `/reel/` replaceState in the JS guard.
+   - **Device finding (docs/diagnose-reel.js, one run, iOS 18.7, English UI):** neither (a) nor (b) applies.
+     A DM-shared reel isn't a link (the thread has no `/reel/` `/reels/` `/p/` `/tv/` href). It opens inline,
+     and the URL stays `/direct/t/…/` throughout: no history calls and no page loads. All reels sit in one
+     vertical scroll-snap list (`overflow-y: scroll`, `scroll-snap-type: y mandatory`, one reel per screen).
+     The sent reel is the first `<video>`, in its own container. Recommended reels follow in a sibling
+     container that grows as you swipe. The route guard can't see any of this, so the fix is DOM-based:
+     PageScript's `lockReelLists()` hides everything after the first video's slot in any vertical snap list.
 2. **Search. Recommendation: KEEP it** by allowing exactly `/explore/search/` and redirecting `/explore/`
    → `/explore/search/`. The Explore tab icon then opens the search box instead of the grid. Keyword
    results (`/explore/search/keyword/`) and tag/location pages stay blocked. Tapping a *user* result goes to

@@ -9,7 +9,8 @@ import Foundation
 ///   1. Route guard: swallows taps on links to blocked pages and refuses pushState/replaceState to them,
 ///      reporting each to the app, which redirects (see WebViewModel's message handler).
 ///   2. Page cleaner: CSS hiding the Reels tab, plus a MutationObserver hiding sponsored/suggested posts
-///      in the home feed. Keyed on hrefs, <article> and short label text, never Instagram's class names.
+///      in the home feed and every reel after the first in a vertical snap list (the DM reel viewer).
+///      Keyed on hrefs, <article>, <video>, snap-list styles and short label text, never Instagram's class names.
 /// Path rules come from NavigationPolicy, so native and JS can't disagree.
 enum PageScript {
     static let messageName = "glanceGuard"
@@ -148,6 +149,48 @@ enum PageScript {
             return (node.parentElement && node.parentElement !== document.body) ? node : null;
           }
 
+          // Reel viewers (a reel shared in a DM opens in one, with no URL change): a vertical scroll-snap list
+          // whose first <video> is the opened reel, followed by recommended reels. Hide everything after the
+          // opened reel's slot, so swiping can't reach them and the list's loader (if any) stays hidden too.
+          var hiddenInReelLists = [];
+          function isSnapList(el, cache) {   // computed styles read once per element per sweep
+            if (!cache.has(el)) {
+              var cs = getComputedStyle(el);
+              cache.set(el, /^(auto|scroll)$/.test(cs.getPropertyValue('overflow-y')) &&
+                /^(y|block)\b/.test(cs.getPropertyValue('scroll-snap-type')));
+            }
+            return cache.get(el);
+          }
+          function lockReelLists() {
+            var videos = document.querySelectorAll('video');
+            var hide = [];
+            if (videos.length >= 2) {   // a lone video needs no lock: skip the style walk
+              var cache = new Map(), groups = new Map();   // snap list -> { first video (DOM order), count }
+              for (var i = 0; i < videos.length; i++) {
+                var list = videos[i].parentElement;
+                while (list && list !== document.documentElement && !isSnapList(list, cache)) { list = list.parentElement; }
+                if (!list || list === document.documentElement) { continue; }
+                var group = groups.get(list);
+                if (group) { group.count++; } else { groups.set(list, { first: videos[i], count: 1 }); }
+              }
+              groups.forEach(function (group, list) {
+                if (group.count < 2) { return; }
+                var slot = group.first;   // largest ancestor below the list holding no other video
+                while (slot.parentElement !== list && slot.parentElement.querySelectorAll('video').length === 1) {
+                  slot = slot.parentElement;
+                }
+                for (var node = slot; node !== list; node = node.parentElement) {
+                  for (var sib = node.nextElementSibling; sib; sib = sib.nextElementSibling) { hide.push(sib); }
+                }
+              });
+            }
+            hiddenInReelLists.forEach(function (el) {
+              if (hide.indexOf(el) === -1) { setHidden(el, false); }
+            });
+            hide.forEach(function (el) { setHidden(el, true); });
+            hiddenInReelLists = hide;
+          }
+
           var hiddenSlots = [];   // suggested-block slots we hid; re-checked every sweep
           var hiddenAfterStop = [];   // feed-list siblings after the stop point (see sweep)
           // A trailing run this long of posts we hid counts as "caught up" when Instagram shows no marker:
@@ -161,6 +204,7 @@ enum PageScript {
               var linkURL = toURL(reelLinks[k].getAttribute('href'));
               setHidden(reelLinks[k], !!linkURL && isBlocked(linkURL));
             }
+            lockReelLists();   // every route: DM, and any other viewer built the same way
             if (!document.body || normPath(location.pathname) !== '/') { return; }   // feed cleaning: home only
             var caughtUp = labelled(document.body, CAUGHT_UP_LABELS)
               .filter(function (el) { return !el.closest('article'); })[0] || null;

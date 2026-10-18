@@ -13,7 +13,8 @@
 //      If it says "glanceReel is not defined" (the page reloaded), paste the file again first.
 //   4. On the phone, swipe to the next reel 3 times, waiting about 3 s after each swipe.
 //      If the console clears (Glance reloaded the page), paste the file again: recording resumes.
-//   5. In the Console run:  glanceReel.stop()   The JSON is copied to the clipboard; send it to us.
+//   5. In the Console run:  glanceReel.stop()   then:  copy(JSON.stringify(glanceReel.last, null, 2))
+//      (the copy inside stop() can silently fail in remote Web Inspector) and send us the clipboard.
 //
 // Read-only on the page: no network, no clicks, no scrolling, no DOM or attribute writes. It adds passive
 // listeners and a 100 ms timer, and wraps history.pushState/replaceState to observe them (it calls through to the
@@ -411,10 +412,14 @@
         snapshots: state.snapshots
       };
       clear();
-      try {
-        if (typeof copy === 'function') { copy(JSON.stringify(result, null, 2)); }
-        console.log('glanceReel: ' + result.classification.guess + ' (' + result.classification.reason + ') JSON copied to clipboard.');
-      } catch (e) {}
+      api.last = result;
+      // copy() called from inside an earlier paste can fail silently in remote Web Inspector, and the page
+      // can't tell, so never claim success. A copy() typed at the console prompt works.
+      var copied = false;
+      try { if (typeof copy === 'function') { copy(JSON.stringify(result, null, 2)); copied = true; } } catch (e) {}
+      console.log('glanceReel: ' + result.classification.guess + ' (' + result.classification.reason + ')\n' +
+        (copied ? 'Tried to copy the JSON to the clipboard; it may silently not work here. ' : 'copy() is unavailable. ') +
+        'To be sure, type this at the console prompt:  copy(JSON.stringify(glanceReel.last, null, 2))');
       return result;
     },
     isRecording: function () { return !!hooks; }
