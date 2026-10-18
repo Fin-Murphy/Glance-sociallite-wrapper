@@ -268,6 +268,8 @@ Everything in this section is best guess (see §0). Paths are compared **lowerca
      The sent reel is the first `<video>`, in its own container. Recommended reels follow in a sibling
      container that grows as you swipe. The route guard can't see any of this, so the fix is DOM-based:
      PageScript's `lockReelLists()` hides everything after the first video's slot in any vertical snap list.
+     The on-device check passed. A reel opened from a profile grid opens as a normal post, not a scrolling reel
+     list, so there's nothing to swipe to and the lock isn't involved.
 2. **Search. Recommendation: KEEP it** by allowing exactly `/explore/search/` and redirecting `/explore/`
    → `/explore/search/`. The Explore tab icon then opens the search box instead of the grid. Keyword
    results (`/explore/search/keyword/`) and tag/location pages stay blocked. Tapping a *user* result goes to

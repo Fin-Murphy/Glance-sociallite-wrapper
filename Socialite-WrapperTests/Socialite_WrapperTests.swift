@@ -95,7 +95,7 @@ struct AppBundleTests {
     /// Unit tests run inside the host app (TEST_HOST), so Bundle.main is the app bundle.
     @Test func infoPlistHasDisplayNameAndUsageStrings() {
         let info = Bundle.main.infoDictionary ?? [:]
-        #expect(info["CFBundleDisplayName"] as? String == "Glance")
+        #expect(info["CFBundleDisplayName"] as? String == "Shitstagram")
         // A missing usage string crashes "Take Photo" in a DM.
         for key in ["NSCameraUsageDescription", "NSMicrophoneUsageDescription", "NSPhotoLibraryUsageDescription"] {
             #expect((info[key] as? String)?.isEmpty == false, "\(key) is missing or empty")

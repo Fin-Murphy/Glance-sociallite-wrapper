@@ -30,7 +30,7 @@ check_archive() {
   [[ -n "$team" && "$team" != "not set" ]] || { echo "TeamIdentifier not set"; return 1; }
   local name
   name="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist")"
-  [[ "$name" == "Glance" ]] || { echo "CFBundleDisplayName is '$name', expected 'Glance'"; return 1; }
+  [[ "$name" == "Shitstagram" ]] || { echo "CFBundleDisplayName is '$name', expected 'Shitstagram'"; return 1; }
 }
 
 step "build-and-test ($SIMULATOR)" xcodebuild -scheme "$SCHEME" -derivedDataPath "$TMP/dd" \
